@@ -79,10 +79,20 @@ export const allowedTransitions: Readonly<Record<UserState, readonly UserState[]
 
 // --- Client -> Server payloads -------------------------------------------
 
+/**
+ * The real limit is applied in `ChatService`, not here, and the difference is
+ * not cosmetic: the rule is that the *trimmed* text is at most
+ * `MAX_MESSAGE_LENGTH`, so 520 characters of prose followed by trailing spaces
+ * is legal. A `.max()` on the raw string would reject it before the trim that
+ * makes it fit, and would report the wrong limit for the same reason.
+ *
+ * Leaving the bound off means this schema accepts arbitrarily long strings, so
+ * the transport caps frame size instead (`maxHttpBufferSize` in the Socket.IO
+ * server). 16kb against a 500 character limit is two orders of magnitude of
+ * headroom, and it means one rule owns the limit rather than two disagreeing.
+ */
 export const chatMessagePayloadSchema = z.strictObject({
-  text: z.string().max(MAX_MESSAGE_LENGTH, {
-    error: `Message must be ${MAX_MESSAGE_LENGTH} characters or fewer.`,
-  }),
+  text: z.string(),
 })
 
 export const chatTypingPayloadSchema = z.strictObject({
@@ -115,8 +125,20 @@ export const chatTypingPayloadOutboundSchema = z.strictObject({
   isTyping: z.boolean(),
 })
 
+/**
+ * Declared on its own and then composed into the payload, rather than inferred
+ * back out of the payload.
+ *
+ * M1 inferred `ChatPartnerLeftReason` from `chatPartnerLeftPayloadSchema`, which
+ * makes it the whole `{ reason }` object, not the reason. Nothing caught it
+ * because the type only ever appeared inside a declared payload shape that no
+ * value was ever checked against. Deriving it the other way round means the
+ * field and the type cannot drift apart again.
+ */
+export const chatPartnerLeftReasonSchema = z.enum(['skipped', 'left', 'disconnected'])
+
 export const chatPartnerLeftPayloadSchema = z.strictObject({
-  reason: z.enum(['skipped', 'left', 'disconnected']),
+  reason: chatPartnerLeftReasonSchema,
 })
 
 export const presenceCountPayloadSchema = z.strictObject({
@@ -155,4 +177,4 @@ export type ChatMessageOutbound = z.infer<typeof chatMessagePayloadOutboundSchem
 export type MatchFoundPayload = z.infer<typeof matchFoundPayloadSchema>
 export type PresenceCountPayload = z.infer<typeof presenceCountPayloadSchema>
 export type ErrorPayload = z.infer<typeof errorPayloadSchema>
-export type ChatPartnerLeftReason = z.infer<typeof chatPartnerLeftPayloadSchema>
+export type ChatPartnerLeftReason = z.infer<typeof chatPartnerLeftReasonSchema>

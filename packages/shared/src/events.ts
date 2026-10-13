@@ -15,14 +15,23 @@ import {
 
 export type ClientEventValue = (typeof ClientEvent)[keyof typeof ClientEvent]
 
-/** Typed Socket.IO contract. This is what gives us `socket.on` autocompletion. */
+/**
+ * Typed Socket.IO contract. This is what gives us `socket.on` autocompletion.
+ *
+ * The events that take no payload are declared as `(...args: unknown[])` rather
+ * than `() => void`, on purpose. A zero-parameter listener never receives the
+ * value a client actually sent, so the server could not see that
+ * `queue:join` arrived with `{ force: true }` — which is exactly the mistake
+ * `noPayloadSchema` exists to catch. This way the handler still receives the raw
+ * argument and can validate it. Emitting correctly is unaffected.
+ */
 export interface ClientToServerEvents {
-  [ClientEvent.queueJoin]: () => void
-  [ClientEvent.queueLeave]: () => void
+  [ClientEvent.queueJoin]: (...args: unknown[]) => void
+  [ClientEvent.queueLeave]: (...args: unknown[]) => void
   [ClientEvent.chatMessage]: (payload: ChatMessageInbound) => void
   [ClientEvent.chatTyping]: (payload: { isTyping: boolean }) => void
-  [ClientEvent.chatSkip]: () => void
-  [ClientEvent.chatLeave]: () => void
+  [ClientEvent.chatSkip]: (...args: unknown[]) => void
+  [ClientEvent.chatLeave]: (...args: unknown[]) => void
 }
 
 export interface ServerToClientEvents {

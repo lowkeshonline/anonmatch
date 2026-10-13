@@ -1,26 +1,24 @@
-import { createServer } from 'node:http'
 import { config, isEmailAllowed } from './config.js'
 import { AuthService } from './services/auth-service.js'
-import { InMemoryAuthSessionStore } from './stores/auth-session-store.js'
-import { InMemoryPresenceStore } from './stores/presence-store.js'
-import { createHttpApp } from './transport/http.js'
-import { createSocketServer } from './transport/socket.js'
+import { createChatServer } from './server.js'
 
+/**
+ * Process concerns only. Everything that composes the app lives in
+ * `createChatServer` so it can be built by a test.
+ */
 const authService = new AuthService({
   googleClientId: config.googleClientId,
   isEmailAllowed,
 })
-const authSessions = new InMemoryAuthSessionStore(config.sessionTtlMs)
-const presence = new InMemoryPresenceStore()
 
-const app = createHttpApp({ config, authService, authSessions })
-const httpServer = createServer(app)
-const io = createSocketServer(httpServer, { config, authSessions, presence })
+const app = createChatServer({ config, authService })
 
 const shutdown = (signal: string) => {
   console.warn(`\n${signal} received, shutting down.`)
-  void io.close()
-  httpServer.close(() => process.exit(0))
+  void app.close().then(
+    () => process.exit(0),
+    () => process.exit(1),
+  )
   // Do not hang forever on a stuck connection.
   setTimeout(() => process.exit(1), 5_000).unref()
 }
@@ -37,8 +35,8 @@ process.on('SIGTERM', () => void shutdown('SIGTERM'))
  */
 const GOOGLE_CLIENT_ID_SHAPE = /^\d{6,}-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/
 
-httpServer.listen(config.port, config.host, () => {
-  console.warn(`anonmatch server listening on http://${config.host}:${config.port} (${config.env})`)
+void app.listen().then((port) => {
+  console.warn(`anonmatch server listening on http://${config.host}:${port} (${config.env})`)
   console.warn(`cors origins: ${config.corsOrigins.join(', ')}`)
   console.warn(`google client id: ${config.googleClientId}`)
 

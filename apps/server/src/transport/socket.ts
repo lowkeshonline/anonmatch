@@ -10,6 +10,11 @@ import {
 import type { Config } from '../config.js'
 import type { AuthSessionStore } from '../stores/auth-session-store.js'
 import type { PresenceStore } from '../stores/presence-store.js'
+import type { ChatService } from '../services/chat-service.js'
+import type { MatchmakingService } from '../services/matchmaking-service.js'
+import type { SessionService } from '../services/session-service.js'
+import { registerChatHandlers } from './chat-handlers.js'
+import type { SocketEmitter } from './socket-emitter.js'
 
 export type ChatServer = Server<
   ClientToServerEvents,
@@ -55,22 +60,35 @@ export interface SocketDeps {
   readonly config: Config
   readonly authSessions: AuthSessionStore
   readonly presence: PresenceStore
+  readonly matchmaking: MatchmakingService
+  readonly sessions: SessionService
+  readonly chats: ChatService
+  readonly emitter: SocketEmitter
 }
 
 export function createSocketServer(httpServer: HttpServer, deps: SocketDeps): ChatServer {
-  const { config, authSessions, presence } = deps
+  const { config, authSessions, presence, matchmaking, sessions, chats, emitter } = deps
 
   const io: ChatServer = new Server(httpServer, {
     cors: {
       origin: config.corsOrigins,
       methods: ['GET', 'POST'],
     },
+    /**
+     * 16kb. The only inbound payload is a message of at most 500 characters, so
+     * this is generous by two orders of magnitude while still capping what a
+     * single frame can cost the server. It is what makes it safe for
+     * `chatMessagePayloadSchema` to impose no length bound of its own.
+     */
+    maxHttpBufferSize: 16 * 1024,
   })
+
+  emitter.bind(io)
 
   /**
    * Runs before any connection handler, so `socket.data.identityId` is
-   * guaranteed to be set for everything downstream. M2 wires the chat handlers
-   * behind this same middleware.
+   * guaranteed to be set for everything downstream. Nothing else in the server
+   * reads the handshake.
    */
   io.use((socket, next) => {
     const token = readHandshakeToken(socket.handshake.auth)
@@ -91,10 +109,24 @@ export function createSocketServer(httpServer: HttpServer, deps: SocketDeps): Ch
   })
 
   io.on('connection', (socket: ChatSocket) => {
-    const online = presence.add(socket.id, socket.data.identityId)
-    io.emit(ServerEvent.presenceCount, { online })
+    const identityId = socket.data.identityId
+
+    sessions.register(socket.id, identityId)
+    registerChatHandlers(socket, { matchmaking, sessions, chats })
+
+    io.emit(ServerEvent.presenceCount, { online: presence.add(socket.id, identityId) })
 
     socket.on('disconnect', () => {
+      /**
+       * Order is load-bearing. The pair has to be torn down and the partner told
+       * before the presence count drops, or the partner sees "0 online" before
+       * they are told their chat ended. `handleDisconnect` covers both the
+       * queued and the chatting case; `forget` drops the rate-limit window,
+       * without which the socketId map would grow for the life of the process.
+       */
+      matchmaking.handleDisconnect(socket.id)
+      chats.forget(socket.id)
+
       io.emit(ServerEvent.presenceCount, { online: presence.remove(socket.id) })
     })
   })
