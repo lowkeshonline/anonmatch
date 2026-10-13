@@ -1,6 +1,6 @@
 import express, { type Express, type Request, type Response } from 'express'
 import { z } from 'zod'
-import type { CurrentUser } from '@chatwadi/shared'
+import type { CurrentUser } from '@anonmatch/shared'
 import { type Config } from '../config.js'
 import { AuthError, type AuthService } from '../services/auth-service.js'
 import type { AuthSessionStore } from '../stores/auth-session-store.js'

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { Identity } from '@chatwadi/shared'
+import type { Identity } from '@anonmatch/shared'
 
 export interface AuthSession {
   readonly token: string

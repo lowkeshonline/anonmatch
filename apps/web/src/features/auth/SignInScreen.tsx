@@ -11,7 +11,7 @@ export function SignInScreen() {
   return (
     <section className="flex flex-col items-center gap-6 text-center">
       <header className="flex flex-col items-center gap-3">
-        <h1 className="text-3xl font-semibold tracking-tight">Chatwadi</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Anonmatch</h1>
         <p className="max-w-xs text-sm text-neutral-400">
           Talk to one stranger at a time. No profiles, no history.
         </p>

@@ -5,7 +5,7 @@ import {
   type ClientToServerEvents,
   type ServerSignal,
   type ServerToClientEvents,
-} from '@chatwadi/shared'
+} from '@anonmatch/shared'
 
 export type ChatClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>
 

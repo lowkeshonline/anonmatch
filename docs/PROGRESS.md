@@ -7,6 +7,14 @@
   `packages/shared` holding the full event contract, server health route,
   verified Google OAuth, Socket.IO handshake auth, live `presence:count`, and a
   web app that signs in and shows the count.
+- **M1 hardening** — Fixed two defects found by real use. `tsx watch` never
+  reloaded on `.env` change, so a stale client ID broke sign-in with an opaque
+  Google error; `scripts/dev.mjs` now restarts on `.env` edits. And
+  `auth-service.ts` was swallowing the verification error, collapsing
+  wrong-audience, clock skew and a bad token into one message; it now classifies
+  and logs the real reason.
+- **Rename** — Chatwadi → Anonmatch across package scope, imports, storage keys,
+  page title and UI copy. `backend/` and `frontend/` keep the old name.
 
 ## Next
 
@@ -24,6 +32,8 @@
 | Auth           | Real Google OAuth via `google-auth-library`. Domain allowlist from `ALLOWED_DOMAINS` env, comma-separated, `*` = allow all.                  |
 | Auth transport | `POST /api/auth/google` → opaque token → Socket.IO handshake `auth`. Event contract unchanged.                                               |
 | PDF export     | Dropped. Known regression, see legacy-contract.                                                                                              |
+| Product name   | **Anonmatch.** Scope `@anonmatch/*`, storage keys `anonmatch.*`. Legacy `backend/` + `frontend/` keep the old name, which is what they are.  |
+| Dev env reload | `tsx watch` cannot see dotfiles via `--include`; `node --watch --watch-path` misses `.ts` via the tsx loader. `scripts/dev.mjs` does both.   |
 | Stores         | `QueueStore`, `SessionStore` (chat pairs), `AuthSessionStore` (token → identity). **Deviation:** AGENTS.md specced two, auth forces a third. |
 | Client states  | `unauthenticated \| idle \| searching \| chatting \| ended`. **Deviation:** AGENTS.md specced four, auth forces a fifth.                     |
 | React          | 18 per AGENTS.md. Legacy runs 19.                                                                                                            |

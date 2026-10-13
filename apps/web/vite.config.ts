@@ -12,9 +12,9 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    // @chatwadi/shared ships TypeScript source for monorepo typechecking, so it
+    // @anonmatch/shared ships TypeScript source for monorepo typechecking, so it
     // must not be pre-bundled as a compiled dep.
-    exclude: ['@chatwadi/shared'],
+    exclude: ['@anonmatch/shared'],
   },
   server: {
     port: 5173,

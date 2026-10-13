@@ -1,5 +1,10 @@
 import { create } from 'zustand'
-import { ErrorCode, type CurrentUser, type ErrorPayload, type ServerSignal } from '@chatwadi/shared'
+import {
+  ErrorCode,
+  type CurrentUser,
+  type ErrorPayload,
+  type ServerSignal,
+} from '@anonmatch/shared'
 import { postJson } from '../lib/api'
 import { connectSocket, disconnectSocket } from '../lib/socket'
 import { sessionStorage } from '../lib/session-storage'

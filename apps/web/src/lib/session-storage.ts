@@ -1,7 +1,7 @@
-import type { CurrentUser } from '@chatwadi/shared'
+import type { CurrentUser } from '@anonmatch/shared'
 
-const TOKEN_KEY = 'chatwadi.token'
-const USER_KEY = 'chatwadi.user'
+const TOKEN_KEY = 'anonmatch.token'
+const USER_KEY = 'anonmatch.user'
 
 /**
  * Session persistence. Kept behind try/catch because Safari private mode and

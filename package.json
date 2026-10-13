@@ -1,5 +1,5 @@
 {
-  "name": "chatwadi",
+  "name": "anonmatch",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,7 +8,7 @@
   },
   "packageManager": "pnpm@10.15.1",
   "scripts": {
-    "dev": "pnpm --parallel --filter @chatwadi/server --filter @chatwadi/web dev",
+    "dev": "pnpm --parallel --filter @anonmatch/server --filter @anonmatch/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",

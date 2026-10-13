@@ -1,5 +1,5 @@
 import { OAuth2Client, type TokenPayload } from 'google-auth-library'
-import type { Identity } from '@chatwadi/shared'
+import type { Identity } from '@anonmatch/shared'
 
 export type AuthErrorCode =
   | 'invalid_credential'
@@ -52,7 +52,7 @@ function clientMessage(code: AuthErrorCode): string {
     case 'clock_skew':
       return 'Your device date and time look wrong. Fix them and try again.'
     case 'domain_not_allowed':
-      return 'That email address is not allowed to use Chatwadi.'
+      return 'That email address is not allowed to use Anonmatch.'
     case 'invalid_credential':
       return 'Google rejected this sign-in. Please try again.'
   }

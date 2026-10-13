@@ -9,5 +9,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   // The shared package ships TypeScript source, so it must be compiled in.
-  noExternal: ['@chatwadi/shared'],
+  noExternal: ['@anonmatch/shared'],
 })

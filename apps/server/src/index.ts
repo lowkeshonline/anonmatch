@@ -38,7 +38,7 @@ process.on('SIGTERM', () => void shutdown('SIGTERM'))
 const GOOGLE_CLIENT_ID_SHAPE = /^\d{6,}-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/
 
 httpServer.listen(config.port, config.host, () => {
-  console.warn(`chatwadi server listening on http://${config.host}:${config.port} (${config.env})`)
+  console.warn(`anonmatch server listening on http://${config.host}:${config.port} (${config.env})`)
   console.warn(`cors origins: ${config.corsOrigins.join(', ')}`)
   console.warn(`google client id: ${config.googleClientId}`)
 

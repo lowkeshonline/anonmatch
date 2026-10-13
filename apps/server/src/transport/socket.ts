@@ -6,7 +6,7 @@ import {
   type ClientToServerEvents,
   type ServerToClientEvents,
   type SocketData,
-} from '@chatwadi/shared'
+} from '@anonmatch/shared'
 import type { Config } from '../config.js'
 import type { AuthSessionStore } from '../stores/auth-session-store.js'
 import type { PresenceStore } from '../stores/presence-store.js'
