@@ -46,7 +46,10 @@ export function createHttpApp(deps: HttpDeps): Express {
       identity = await authService.authenticate(parsed.data.credential)
     } catch (error) {
       if (error instanceof AuthError) {
-        const status = error.code === 'domain_not_allowed' ? 403 : 401
+        // A config mismatch is our fault, not the caller's, so it must not be
+        // reported as a rejected credential.
+        const status =
+          error.code === 'domain_not_allowed' ? 403 : error.code === 'config_mismatch' ? 500 : 401
         res.status(status).json({ error: error.code, message: error.message })
         return
       }

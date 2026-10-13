@@ -1,7 +1,13 @@
 import { OAuth2Client, type TokenPayload } from 'google-auth-library'
 import type { Identity } from '@chatwadi/shared'
 
-export type AuthErrorCode = 'invalid_credential' | 'domain_not_allowed'
+export type AuthErrorCode =
+  | 'invalid_credential'
+  | 'domain_not_allowed'
+  /** Server and browser are using different OAuth clients, or the token is for another app. */
+  | 'config_mismatch'
+  /** The device clock is far enough off that Google rejects the token's iat/exp. */
+  | 'clock_skew'
 
 /**
  * Distinguishes "Google said no" from "your account is not on the list" so the
@@ -17,20 +23,63 @@ export class AuthError extends Error {
   }
 }
 
+/**
+ * Maps Google's failure reasons onto our codes.
+ *
+ * This exists because a bare `catch {}` turned every distinct root cause into
+ * one useless "Google rejected this sign-in", which made a config mismatch
+ * indistinguishable from an expired token. Only the *shape* of Google's message
+ * is inspected, never the token itself.
+ */
+function classifyGoogleFailure(reason: string): AuthErrorCode {
+  const lower = reason.toLowerCase()
+
+  if (lower.includes('wrong recipient') || lower.includes('audience')) return 'config_mismatch'
+  if (lower.includes('too late') || lower.includes('too early')) return 'clock_skew'
+  return 'invalid_credential'
+}
+
+/**
+ * What the user is told. Deliberately less specific than the server log:
+ * `config_mismatch` is our bug, not theirs, so it gets a generic retry rather
+ * than an explanation of OAuth internals. `clock_skew` is the exception because
+ * the user can actually act on it.
+ */
+function clientMessage(code: AuthErrorCode): string {
+  switch (code) {
+    case 'config_mismatch':
+      return 'Sign-in is temporarily unavailable. Please try again.'
+    case 'clock_skew':
+      return 'Your device date and time look wrong. Fix them and try again.'
+    case 'domain_not_allowed':
+      return 'That email address is not allowed to use Chatwadi.'
+    case 'invalid_credential':
+      return 'Google rejected this sign-in. Please try again.'
+  }
+}
+
 export interface AuthServiceDeps {
   readonly googleClientId: string
   readonly isEmailAllowed: (email: string) => boolean
+  /** Injected so tests can assert on diagnostics without stubbing console. */
+  readonly logError?: (message: string, detail: Record<string, unknown>) => void
 }
 
 export class AuthService {
   readonly #client: OAuth2Client
   readonly #googleClientId: string
   readonly #isEmailAllowed: (email: string) => boolean
+  readonly #logError: (message: string, detail: Record<string, unknown>) => void
 
   constructor(deps: AuthServiceDeps) {
     this.#googleClientId = deps.googleClientId
     this.#client = new OAuth2Client(deps.googleClientId)
     this.#isEmailAllowed = deps.isEmailAllowed
+    this.#logError =
+      deps.logError ??
+      ((message, detail) => {
+        console.error(message, detail)
+      })
   }
 
   /**
@@ -48,8 +97,21 @@ export class AuthService {
         audience: this.#googleClientId,
       })
       payload = ticket.getPayload()
-    } catch {
-      throw new AuthError('invalid_credential', 'Google rejected this sign-in. Please try again.')
+    } catch (cause) {
+      const reason = cause instanceof Error ? cause.message : String(cause)
+      const code = classifyGoogleFailure(reason)
+
+      // The reason is safe to log: it describes the failure, never the token.
+      // Logging the audience alongside is what turns a config mismatch from a
+      // twenty-minute investigation into a glance at two ids.
+      this.#logError('Google rejected an ID token.', {
+        code,
+        reason,
+        expectedAudience: this.#googleClientId,
+        credentialLength: credential.length,
+      })
+
+      throw new AuthError(code, clientMessage(code))
     }
 
     const { sub, email, email_verified: emailVerified, name, picture } = payload ?? {}
@@ -66,10 +128,7 @@ export class AuthService {
     }
 
     if (!this.#isEmailAllowed(email)) {
-      throw new AuthError(
-        'domain_not_allowed',
-        'That email address is not allowed to use Chatwadi.',
-      )
+      throw new AuthError('domain_not_allowed', clientMessage('domain_not_allowed'))
     }
 
     return {

@@ -1,10 +1,10 @@
 # ROLE
 
-You are a senior full-stack TypeScript engineer rebuilding "Chatwadi" from scratch in this repo. I'm Lokesh, a final-year MCA student. I know some React/Node and I'm learning TypeScript while building, so after each milestone give a short summary (max 5 bullets) of what you did and why.
+You are a senior full-stack TypeScript engineer rebuilding "Chatwadi" to "Anonmatch" from scratch in this repo. I'm Lokesh, a final-year MCA student. I know some React/Node and I'm learning TypeScript while building, so after each milestone give a short summary (max 5 bullets) of what you did and why.
 
 # PRODUCT
 
-Chatwadi is an anonymous random 1-on-1 text chat. A user opens the site, clicks Start, enters a matching queue, gets paired with another waiting stranger, and chats in real time. Either user can Skip (back to the queue) or Leave. No accounts in the MVP.
+Anonmatch is an anonymous random 1-on-1 text chat. A user opens the site, clicks Start, enters a matching queue, gets paired with another waiting stranger, and chats in real time. Either user can Skip (back to the queue) or Leave. No accounts in the MVP.
 
 # WHY THE REBUILD
 
