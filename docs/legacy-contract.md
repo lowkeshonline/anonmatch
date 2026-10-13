@@ -11,11 +11,11 @@ it and do not import from it.
 
 ## 1. Transport summary
 
-| | Legacy | Rebuild |
-|---|---|---|
-| Realtime | Raw WebSocket, `GET /ws/chat?token=<uuid>` | Socket.IO, default namespace |
-| Auth | Bearer token in a query string, minted by a REST call | Opaque token in `localStorage`, passed in the Socket.IO handshake |
-| State | Free-form module-level `dict` and `set` | Explicit state machine, `idle → queued → chatting → ended` |
+|          | Legacy                                                | Rebuild                                                           |
+| -------- | ----------------------------------------------------- | ----------------------------------------------------------------- |
+| Realtime | Raw WebSocket, `GET /ws/chat?token=<uuid>`            | Socket.IO, default namespace                                      |
+| Auth     | Bearer token in a query string, minted by a REST call | Opaque token in `localStorage`, passed in the Socket.IO handshake |
+| State    | Free-form module-level `dict` and `set`               | Explicit state machine, `idle → queued → chatting → ended`        |
 
 Legacy uses plain WebSocket, so there are no rooms, no acks, and no server-side
 event namespacing. Every message is `{ "event": "...", ... }` JSON with a string
@@ -25,12 +25,12 @@ discriminator.
 
 ## 2. HTTP endpoints
 
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST | `/login` | **none** | `?email=<addr>` | `{ token, email }` |
-| POST | `/google-login` | Google ID token | `{ token }` | `{ success, token?, email?, message? }` |
-| GET | `/online` | optional `?token=` | — | `{ online, details: { active_connections, logged_in } }` |
-| GET | `/download/{chat_id}` | `?token=` must be in the chat | — | `{ chat_id, messages }` |
+| Method | Path                  | Auth                          | Request         | Response                                                 |
+| ------ | --------------------- | ----------------------------- | --------------- | -------------------------------------------------------- |
+| POST   | `/login`              | **none**                      | `?email=<addr>` | `{ token, email }`                                       |
+| POST   | `/google-login`       | Google ID token               | `{ token }`     | `{ success, token?, email?, message? }`                  |
+| GET    | `/online`             | optional `?token=`            | —               | `{ online, details: { active_connections, logged_in } }` |
+| GET    | `/download/{chat_id}` | `?token=` must be in the chat | —               | `{ chat_id, messages }`                                  |
 
 ### `/login` is not a gate
 
@@ -50,44 +50,44 @@ not a security control. The rebuild uses verified Google OAuth instead.
 
 ### Client → server
 
-| Event | Payload | Server behaviour |
-|---|---|---|
-| `connect_to_chat` | — | Joins `ready_users`, scans for a partner, either pairs or queues |
-| `message` | `{ message: string }` | Looks up the sender's chat by scanning **every** active chat, appends to history, forwards to peer |
-| `typing` | — | Records `typing_status[token] = { timestamp, peer_token }`, notifies peer |
+| Event             | Payload               | Server behaviour                                                                                   |
+| ----------------- | --------------------- | -------------------------------------------------------------------------------------------------- |
+| `connect_to_chat` | —                     | Joins `ready_users`, scans for a partner, either pairs or queues                                   |
+| `message`         | `{ message: string }` | Looks up the sender's chat by scanning **every** active chat, appends to history, forwards to peer |
+| `typing`          | —                     | Records `typing_status[token] = { timestamp, peer_token }`, notifies peer                          |
 
 ### Server → client
 
-| Event | Payload | When |
-|---|---|---|
-| `waiting` | `{ message: "Waiting for a chat partner..." }` | No partner available |
-| `chat_started` | `{ chat_id, peer: <email> }` | Both parties matched |
-| `message` | `{ message, sender: <email> }` | Peer sent a message |
-| `typing` | `{ message: "<email> is typing..." }` | Peer is typing |
-| `typing_ended` | — | Typing expired (3s) or peer sent a message |
-| `chat_ended` | `{ message: "User <email> disconnected" }` | Peer disconnected |
-| `error` | `{ message }` | Unknown event, no chat session, or no partner |
+| Event          | Payload                                        | When                                          |
+| -------------- | ---------------------------------------------- | --------------------------------------------- |
+| `waiting`      | `{ message: "Waiting for a chat partner..." }` | No partner available                          |
+| `chat_started` | `{ chat_id, peer: <email> }`                   | Both parties matched                          |
+| `message`      | `{ message, sender: <email> }`                 | Peer sent a message                           |
+| `typing`       | `{ message: "<email> is typing..." }`          | Peer is typing                                |
+| `typing_ended` | —                                              | Typing expired (3s) or peer sent a message    |
+| `chat_ended`   | `{ message: "User <email> disconnected" }`     | Peer disconnected                             |
+| `error`        | `{ message }`                                  | Unknown event, no chat session, or no partner |
 
 ### Legacy vs rebuild contract
 
-The rebuild keeps the same *behaviour* but renames every event and drops the
+The rebuild keeps the same _behaviour_ but renames every event and drops the
 email from every payload:
 
-| Legacy | Rebuild |
-|---|---|
-| `connect_to_chat` | `queue:join` |
-| — (close socket) | `queue:leave` |
-| `message` `{message}` | `chat:message` `{text}` |
-| `typing` | `chat:typing` `{isTyping}` |
-| — | `chat:skip` |
-| — | `chat:leave` |
-| `waiting` | `queue:waiting` |
-| `chat_started` | `match:found` `{roomId}` |
-| `message` | `chat:message` `{id, text, from, ts}` |
-| `typing` / `typing_ended` | `chat:typing` `{isTyping}` |
-| `chat_ended` | `chat:partner_left` |
-| — | `presence:count` `{online}` |
-| `error` | `error` `{code, message}` |
+| Legacy                    | Rebuild                               |
+| ------------------------- | ------------------------------------- |
+| `connect_to_chat`         | `queue:join`                          |
+| — (close socket)          | `queue:leave`                         |
+| `message` `{message}`     | `chat:message` `{text}`               |
+| `typing`                  | `chat:typing` `{isTyping}`            |
+| —                         | `chat:skip`                           |
+| —                         | `chat:leave`                          |
+| `waiting`                 | `queue:waiting`                       |
+| `chat_started`            | `match:found` `{roomId}`              |
+| `message`                 | `chat:message` `{id, text, from, ts}` |
+| `typing` / `typing_ended` | `chat:typing` `{isTyping}`            |
+| `chat_ended`              | `chat:partner_left`                   |
+| —                         | `presence:count` `{online}`           |
+| `error`                   | `error` `{code, message}`             |
 
 `chat:skip` has no legacy equivalent. Legacy's "Find New Partner" button just
 closes the socket and opens a new one, which orphans the partner until their
@@ -108,7 +108,7 @@ On `connect_to_chat`:
 
 1. Append self to `ready_users` if not present.
 2. Scan `ready_users` **from the head**, take the first token that is not self
-   *and* is also in `waiting_queue`.
+   _and_ is also in `waiting_queue`.
 3. **If found:** create `chat_id`, append self to `waiting_queue`, create the
    chat, emit `chat_started` to both, then remove both tokens from
    `ready_users` and `waiting_queue`.
@@ -166,7 +166,7 @@ Properties the rebuild fixes:
 - **Two tabs, one token.** `manager.connect` does
   `active_connections[token] = websocket`, silently overwriting the first
   socket. The orphaned socket stays open and its chat is now unreachable. When
-  the *new* socket later disconnects, the shared chat is destroyed out from
+  the _new_ socket later disconnects, the shared chat is destroyed out from
   under both.
 - **Unbounded memory.** `active_chats` holds every message from every chat for
   the process lifetime. Never evicted, never TTL'd. `/download/{chat_id}` will
@@ -203,23 +203,23 @@ partner-left notification, online count.
 
 ### Keep and fix
 
-| Feature | Legacy problem | Rebuild |
-|---|---|---|
-| Campus access | `/login` unverified | Verified Google OAuth, domain allowlist from env |
-| Match | keyed by token, self-match possible | keyed by `socket.id` |
-| Presence | union of two sets, never decrements | refcounted per identity, pushed on connect/disconnect |
-| Typing | server cancels it after 3s | client-driven `chat:typing {isTyping}` |
+| Feature       | Legacy problem                      | Rebuild                                               |
+| ------------- | ----------------------------------- | ----------------------------------------------------- |
+| Campus access | `/login` unverified                 | Verified Google OAuth, domain allowlist from env      |
+| Match         | keyed by token, self-match possible | keyed by `socket.id`                                  |
+| Presence      | union of two sets, never decrements | refcounted per identity, pushed on connect/disconnect |
+| Typing        | server cancels it after 3s          | client-driven `chat:typing {isTyping}`                |
 
 ### Drop
 
-| Feature | Reason |
-|---|---|
-| `/login` email-only | Not a gate; superseded by verified OAuth |
-| `GET /download/{chat_id}` | Requires unbounded server-side history, which contradicts the no-database MVP |
-| Download-as-PDF (jsPDF) | Same reason; would need history retention to be useful |
-| React Router auth redirects | Gate is a single pre-flight session call, no routes needed |
-| Marketing landing page | Hardcoded fake stats and testimonials; MVP landing is Start + online count |
-| `axios` | Socket.IO carries everything; one REST call for the session token |
+| Feature                     | Reason                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| `/login` email-only         | Not a gate; superseded by verified OAuth                                      |
+| `GET /download/{chat_id}`   | Requires unbounded server-side history, which contradicts the no-database MVP |
+| Download-as-PDF (jsPDF)     | Same reason; would need history retention to be useful                        |
+| React Router auth redirects | Gate is a single pre-flight session call, no routes needed                    |
+| Marketing landing page      | Hardcoded fake stats and testimonials; MVP landing is Start + online count    |
+| `axios`                     | Socket.IO carries everything; one REST call for the session token             |
 
 ### Known regression
 

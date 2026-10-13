@@ -1,0 +1,8 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# esbuild needs its postinstall to fetch its platform binary. Without this,
+# pnpm blocks it and tsx/vite/tsup all fail at runtime.
+onlyBuiltDependencies:
+  - esbuild
