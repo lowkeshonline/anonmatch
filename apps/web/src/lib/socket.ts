@@ -65,6 +65,9 @@ export function connectSocket(token: string, onSignal: Listener): ChatClientSock
     auth: (callback: (credentials: { token: string }) => void) => callback({ token }),
     autoConnect: true,
     transports: ['websocket', 'polling'],
+    // M5 reconnect bounds: never wait longer than 10s for a handshake or a retry gap.
+    timeout: 10_000,
+    reconnectionDelayMax: 10_000,
   })
 
   registerHandlers(socket)
@@ -75,4 +78,21 @@ export function disconnectSocket(): void {
   socket?.disconnect()
   socket = null
   listener = null
+}
+
+/**
+ * Emits a client event, if there is a live socket to emit on.
+ *
+ * Returns whether the event actually left. The store uses that to decide
+ * between an optimistic transition and reverting it: emitting into a closed
+ * socket would silently queue the frame and leave the UI claiming a state the
+ * server never accepted.
+ */
+export function emitToServer<E extends keyof ClientToServerEvents>(
+  event: E,
+  ...args: Parameters<ClientToServerEvents[E]>
+): boolean {
+  if (socket === null || !socket.connected) return false
+  socket.emit(event, ...args)
+  return true
 }

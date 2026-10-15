@@ -81,6 +81,13 @@ export function createSocketServer(httpServer: HttpServer, deps: SocketDeps): Ch
      * `chatMessagePayloadSchema` to impose no length bound of its own.
      */
     maxHttpBufferSize: 16 * 1024,
+    /**
+     * Spelled out rather than left to the library defaults so a half-open
+     * connection (a phone that dropped off wifi without a FIN) is reaped on a
+     * known schedule instead of whenever the dependency changes its mind.
+     */
+    pingInterval: 25_000,
+    pingTimeout: 20_000,
   })
 
   emitter.bind(io)

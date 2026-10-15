@@ -15,6 +15,7 @@ const app = createChatServer({ config, authService })
 
 const shutdown = (signal: string) => {
   console.warn(`\n${signal} received, shutting down.`)
+  app.stopPruning()
   void app.close().then(
     () => process.exit(0),
     () => process.exit(1),

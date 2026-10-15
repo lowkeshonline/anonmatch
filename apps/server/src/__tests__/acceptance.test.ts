@@ -217,6 +217,26 @@ describe('the assembled server', () => {
     expect(alice.socket.connected).toBe(true)
   })
 
+  it('rate limits the google auth endpoint', async () => {
+    await boot()
+
+    // A junk credential is refused by Google (or by us) without ever reaching a
+    // real account, so this hammers the endpoint the way a script would.
+    const attempt = () =>
+      fetch(`${baseUrl}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ credential: 'not-a-real-token' }),
+      })
+
+    for (let i = 0; i < 10; i += 1) await attempt()
+
+    const limited = await attempt()
+    expect(limited.status).toBe(429)
+    const body = (await limited.json()) as { error: string }
+    expect(body.error).toBe(ErrorCode.rateLimited)
+  })
+
   it('counts distinct identities rather than sockets', async () => {
     await boot()
     const alice = await connectAs('google:alice')

@@ -1,12 +1,38 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
     <title>Anonmatch</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&display=swap"
+    />
+
+    <script>
+      // Applied before first paint so a light-mode user never sees a black flash.
+      // Kept inline and tiny on purpose: it is the one thing that must run before
+      // React mounts, and a deferred module would be too late.
+      ;(function () {
+        try {
+          var stored = window.localStorage.getItem('anonmatch.theme')
+          var prefersLight =
+            window.matchMedia('(prefers-color-scheme: light)').matches &&
+            !window.matchMedia('(prefers-color-scheme: dark)').matches
+          var theme =
+            stored === 'light' || stored === 'dark' ? stored : prefersLight ? 'light' : 'dark'
+          document.documentElement.dataset.theme = theme
+        } catch {
+          // Storage can throw in private mode; the dark default already applies.
+        }
+      })()
+    </script>
   </head>
-  <body class="bg-neutral-950 text-neutral-100 antialiased">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

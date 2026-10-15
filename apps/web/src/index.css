@@ -4,12 +4,292 @@
 
 @layer base {
   :root {
-    color-scheme: dark light;
+    color-scheme: dark;
+    --c-bg: 0 0 0;
+    --c-surface: 10 10 10;
+    --c-line: 38 38 38;
+    --c-ink: 250 250 250;
+    --c-muted: 161 161 161;
+    --c-accent: 250 250 250;
+    --c-on-accent: 10 10 10;
+  }
+
+  [data-theme='light'] {
+    color-scheme: light;
+    /* Pure white was glare against the animated background: the canvas is a soft
+       grey and the surface stays a step above it, so panels still read as
+       raised without the page needing sunglasses. */
+    --c-bg: 235 235 237;
+    --c-surface: 246 246 247;
+    --c-line: 212 212 215;
+    --c-ink: 10 10 10;
+    --c-muted: 96 96 100;
+    --c-accent: 23 23 23;
+    --c-on-accent: 250 250 250;
   }
 
   html,
   body,
   #root {
     height: 100%;
+  }
+
+  body {
+    background-color: rgb(var(--c-bg));
+    color: rgb(var(--c-ink));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  ::selection {
+    background-color: rgb(var(--c-accent) / 0.9);
+    color: rgb(var(--c-on-accent));
+  }
+}
+
+@layer components {
+  .icon-btn {
+    @apply grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-transparent text-muted transition-colors hover:text-ink disabled:opacity-40;
+    &:focus-visible {
+      @apply outline outline-2 outline-offset-2 outline-accent;
+    }
+  }
+
+  .btn {
+    @apply inline-flex h-14 w-full items-center justify-center rounded-2xl bg-accent text-center text-lg font-bold text-on-accent transition-[transform,opacity] active:scale-[0.99] disabled:opacity-40;
+    &:focus-visible {
+      @apply outline outline-2 outline-offset-2 outline-accent;
+    }
+  }
+
+  .btn-secondary {
+    @apply inline-flex h-14 w-full items-center justify-center rounded-2xl border border-line bg-transparent text-center text-base font-semibold text-ink transition-[transform,background-color,opacity] hover:bg-surface active:scale-[0.99] disabled:opacity-40;
+    &:focus-visible {
+      @apply outline outline-2 outline-offset-2 outline-accent;
+    }
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[15px];
+  }
+
+  .live-dot {
+    @apply h-2 w-2 shrink-0 animate-dot rounded-full bg-accent;
+  }
+
+  /**
+   * The body of a full-height screen. It scrolls on short viewports instead of
+   * being clipped by the shell's `overflow-hidden`, and `safe center` means the
+   * centred stack falls back to top alignment once it is taller than the screen
+   * — plain `center` pushes the overflow past the scroll origin, where none of
+   * it can be reached.
+   */
+  .screen-main {
+    @apply flex min-h-0 flex-1 flex-col overscroll-contain overflow-y-auto px-7;
+    justify-content: safe center;
+  }
+
+  /**
+   * The background photo, on every screen except searching.
+   * `.bg-ambient-shift` carries the pointer parallax, `.bg-ambient` the slow
+   * drift and the photo itself: two elements because a transform and a keyframe
+   * animation cannot share one. Both sit at `-z-10`, so they paint over the
+   * shell's own `bg-bg` and under everything in flow.
+   *
+   * The photo layer is mounted 6% oversized, which is what lets the drift and
+   * the parallax shift without ever exposing an edge.
+   */
+  .bg-ambient-shift {
+    @apply pointer-events-none absolute inset-0 -z-10;
+    transform: translate3d(var(--shift-x, 0px), var(--shift-y, 0px), 0);
+    transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bg-ambient {
+    @apply pointer-events-none absolute -inset-[6%] bg-cover bg-center;
+    background-image: url('/web_background.jpg');
+    animation: ambient-drift 28s ease-in-out infinite alternate;
+  }
+
+  /**
+   * The scrim leans on the theme's own background token, so it darkens with the
+   * dark theme and lightens with the light one without a second palette. It is a
+   * gradient rather than a flat wash — the photo is the point of the screen, so
+   * the top of it stays untouched and the strength only builds toward the
+   * bottom, where the copy, the footer and the chat composer sit.
+   */
+  .bg-ambient::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(
+      to bottom,
+      rgb(var(--c-bg) / 0) 0%,
+      rgb(var(--c-bg) / 0.1) 40%,
+      rgb(var(--c-bg) / 0.62) 100%
+    );
+  }
+
+  [data-theme='light'] .bg-ambient::after {
+    background: linear-gradient(
+      to bottom,
+      rgb(var(--c-bg) / 0) 0%,
+      rgb(var(--c-bg) / 0.1) 40%,
+      rgb(var(--c-bg) / 0.72) 100%
+    );
+  }
+
+  /**
+   * Frosted surface: the animated background reads through it, dimmed just
+   * enough to keep the copy on top legible. The tint is the theme's own
+   * background token at partial alpha, so one rule serves light and dark.
+   */
+  .glass {
+    @apply backdrop-blur-xl;
+    background-color: rgb(var(--c-bg) / 0.68);
+  }
+
+  .screen-footer {
+    @apply flex shrink-0 flex-col gap-3 px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-4 text-center text-sm;
+  }
+
+  .display-heading {
+    @apply text-[44px] font-extrabold leading-[1.02] tracking-[-0.03em];
+  }
+
+  .sub-heading {
+    @apply text-lg leading-[1.4] text-muted;
+    /* Bare on the animated background, where no shard can be relied on to sit
+       behind it. A tight shadow in the page's own surface colour restores the
+       edge in both themes without adding a panel around the line. */
+    text-shadow: 0 1px 3px rgb(var(--c-bg) / 0.85);
+  }
+
+  .status-heading {
+    @apply text-[28px] font-extrabold tracking-[-0.02em];
+  }
+
+  .bubble {
+    @apply max-w-[78%] whitespace-pre-wrap px-3.5 py-2.5 text-base leading-[1.35] lg:max-w-[70%];
+    /* A pasted URL or a run with no spaces is the one thing that can outrun the
+       bubble. `anywhere` breaks it and, unlike `break-word`, also collapses the
+       min-content width, so one long token cannot stretch the log sideways. */
+    overflow-wrap: anywhere;
+  }
+
+  .bubble-them {
+    @apply bubble self-start rounded-[18px_18px_18px_6px] border border-line bg-surface;
+  }
+
+  .bubble-me {
+    @apply bubble self-end rounded-[18px_18px_6px_18px] bg-accent text-on-accent;
+  }
+
+  .system-note {
+    @apply mx-auto flex max-w-[92%] items-center gap-2.5 self-center rounded-[14px] border border-line px-3.5 py-2 text-center text-[13px] leading-[1.35] text-muted lg:max-w-[90%] lg:text-sm;
+  }
+
+  /**
+   * The docked input. Its height is deliberately left to the content: a 22px
+   * line inside the design's 12px/14px padding lands on exactly the 48px/52px
+   * box the design docked, and `field-sizing: content` grows it from there with
+   * the draft instead of hiding the second line behind a scrollbar. Either way
+   * the log — not the dock — is what gives up space once the draft reaches the
+   * viewport cap.
+   *
+   * shortcut: on browsers without `field-sizing: content` the textarea stays one
+   * row tall and scrolls internally, upgrade to a JS autosize fallback when that
+   * support gap is worth maintaining
+   */
+  .composer-input {
+    @apply h-auto min-h-0 w-full resize-none rounded-[14px] border border-line bg-surface px-3.5 py-3 text-base leading-[1.375] text-ink placeholder:text-muted lg:min-h-[52px] lg:bg-bg lg:py-3.5 lg:px-4;
+    field-sizing: content;
+    min-height: 48px;
+    max-height: 38vh;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    &:focus-visible {
+      @apply outline outline-2 outline-offset-0 outline-accent;
+    }
+  }
+
+  /**
+   * Both send buttons. They use `aria-disabled` rather than `disabled` so the
+   * control keeps its place in the tab order: a keyboard user can still see
+   * where Send is and why it is inert, instead of the focus dropping out of the
+   * dock the moment a draft is sent.
+   */
+  .send-btn {
+    @apply shrink-0 place-items-center rounded-[14px] bg-accent text-on-accent transition-opacity;
+    &:focus-visible {
+      @apply outline outline-2 outline-offset-2 outline-accent;
+    }
+    &[aria-disabled='true'] {
+      @apply cursor-not-allowed opacity-40;
+    }
+  }
+
+  /**
+   * The escape hatch when the reader has scrolled up: one pill, anchored to the
+   * log's bottom edge, that returns to the newest message without hiding the
+   * history they were reading.
+   */
+  .jump-latest {
+    @apply absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold text-ink;
+    &:focus-visible {
+      @apply outline outline-2 outline-offset-2 outline-accent;
+    }
+  }
+
+  .skip-btn {
+    @apply flex h-12 items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-accent bg-transparent text-base font-bold text-accent transition-[transform,opacity] active:scale-[0.99] disabled:opacity-40;
+    &:focus-visible {
+      @apply outline outline-2 outline-offset-2 outline-accent;
+    }
+  }
+
+  .leave-btn {
+    @apply h-12 rounded-[14px] border border-line bg-transparent px-5 text-base font-semibold text-muted transition-[background-color,opacity] hover:bg-surface active:scale-[0.99] disabled:opacity-40;
+    &:focus-visible {
+      @apply outline outline-2 outline-offset-2 outline-accent;
+    }
+  }
+}
+
+/**
+ * The background's motion: one slow push-in with a drift, alternating so it
+ * never jumps. Scale is capped at 1.06 — enough to read as alive, small enough
+ * that the photo is not visibly cropping in over half a minute.
+ */
+@keyframes ambient-drift {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.06) translate3d(-1.4%, -0.9%, 0);
+  }
+}
+
+/**
+ * The design's motion set is decorative: rings, typing dots, the live pulse,
+ * the connect spark. All of it is disabled here rather than merely shortened, so
+ * a motion-sensitive user sees the same information at a stable opacity.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-ring,
+  .animate-blink,
+  .animate-dot,
+  .animate-spark,
+  .animate-pop,
+  .animate-fade,
+  .animate-enter,
+  .bg-ambient {
+    animation: none;
+  }
+
+  .bg-ambient-shift {
+    transform: none;
+    transition: none;
   }
 }

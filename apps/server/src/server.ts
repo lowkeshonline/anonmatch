@@ -21,6 +21,8 @@ export interface ChatServerApp {
   readonly authSessions: InMemoryAuthSessionStore
   /** Listens on `port`, or on a free port when `port` is 0. Resolves the port. */
   listen(): Promise<number>
+  /** Stops the background prune timer. Called from graceful shutdown. */
+  stopPruning(): void
   close(): Promise<void>
 }
 
@@ -70,11 +72,20 @@ export function createChatServer(deps: ChatServerDeps): ChatServerApp {
     emitter,
   })
 
+  /**
+   * Expired tokens are only removed lazily on lookup, so without this the
+   * token -> identity map would grow for the life of the process. `unref()` so
+   * the timer never holds the process open.
+   */
+  const pruneTimer = setInterval(() => authSessions.prune(now()), 60_000)
+  pruneTimer.unref()
+
   return {
     httpApp,
     httpServer,
     io,
     authSessions,
+    stopPruning: () => clearInterval(pruneTimer),
     listen: () =>
       new Promise<number>((resolve, reject) => {
         httpServer.once('error', reject)
