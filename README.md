@@ -8,5 +8,3 @@ Either side can Skip or Leave.
 - `apps/server` — Node/Socket.IO server: matchmaking, sessions, chat, auth, HTTP API.
 - `apps/web` — Vite + React SPA.
 - `packages/shared` — shared contract (events, error codes, Zod schemas, state machine). Change this first.
-- `backend/`, `frontend/` — legacy reference, read-only. Not built or served.
-

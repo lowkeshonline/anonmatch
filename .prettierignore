@@ -3,8 +3,3 @@ dist
 dist-ssr
 coverage
 pnpm-lock.yaml
-
-# Legacy reference app. Read-only, must never be reformatted or linted.
-legacy
-backend
-frontend

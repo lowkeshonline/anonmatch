@@ -5,14 +5,7 @@ import prettier from 'eslint-config-prettier'
 
 export default tseslint.config(
   {
-    ignores: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/coverage/**',
-      'backend/**',
-      'frontend/**',
-      'legacy/**',
-    ],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

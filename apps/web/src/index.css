@@ -92,55 +92,6 @@
   }
 
   /**
-   * The background photo, on every screen except searching.
-   * `.bg-ambient-shift` carries the pointer parallax, `.bg-ambient` the slow
-   * drift and the photo itself: two elements because a transform and a keyframe
-   * animation cannot share one. Both sit at `-z-10`, so they paint over the
-   * shell's own `bg-bg` and under everything in flow.
-   *
-   * The photo layer is mounted 6% oversized, which is what lets the drift and
-   * the parallax shift without ever exposing an edge.
-   */
-  .bg-ambient-shift {
-    @apply pointer-events-none absolute inset-0 -z-10;
-    transform: translate3d(var(--shift-x, 0px), var(--shift-y, 0px), 0);
-    transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .bg-ambient {
-    @apply pointer-events-none absolute -inset-[6%] bg-cover bg-center;
-    background-image: url('/web_background.jpg');
-    animation: ambient-drift 28s ease-in-out infinite alternate;
-  }
-
-  /**
-   * The scrim leans on the theme's own background token, so it darkens with the
-   * dark theme and lightens with the light one without a second palette. It is a
-   * gradient rather than a flat wash — the photo is the point of the screen, so
-   * the top of it stays untouched and the strength only builds toward the
-   * bottom, where the copy, the footer and the chat composer sit.
-   */
-  .bg-ambient::after {
-    content: '';
-    @apply absolute inset-0;
-    background: linear-gradient(
-      to bottom,
-      rgb(var(--c-bg) / 0) 0%,
-      rgb(var(--c-bg) / 0.1) 40%,
-      rgb(var(--c-bg) / 0.62) 100%
-    );
-  }
-
-  [data-theme='light'] .bg-ambient::after {
-    background: linear-gradient(
-      to bottom,
-      rgb(var(--c-bg) / 0) 0%,
-      rgb(var(--c-bg) / 0.1) 40%,
-      rgb(var(--c-bg) / 0.72) 100%
-    );
-  }
-
-  /**
    * Frosted surface: the animated background reads through it, dimmed just
    * enough to keep the copy on top legible. The tint is the theme's own
    * background token at partial alpha, so one rule serves light and dark.
@@ -258,20 +209,6 @@
 }
 
 /**
- * The background's motion: one slow push-in with a drift, alternating so it
- * never jumps. Scale is capped at 1.06 — enough to read as alive, small enough
- * that the photo is not visibly cropping in over half a minute.
- */
-@keyframes ambient-drift {
-  from {
-    transform: scale(1) translate3d(0, 0, 0);
-  }
-  to {
-    transform: scale(1.06) translate3d(-1.4%, -0.9%, 0);
-  }
-}
-
-/**
  * The design's motion set is decorative: rings, typing dots, the live pulse,
  * the connect spark. All of it is disabled here rather than merely shortened, so
  * a motion-sensitive user sees the same information at a stable opacity.
@@ -283,13 +220,7 @@
   .animate-spark,
   .animate-pop,
   .animate-fade,
-  .animate-enter,
-  .bg-ambient {
+  .animate-enter {
     animation: none;
-  }
-
-  .bg-ambient-shift {
-    transform: none;
-    transition: none;
   }
 }

@@ -8,19 +8,14 @@ import { useTheme } from '../hooks/useTheme'
  *
  * Decorative, so it is hidden from assistive tech. WebGPU is the only hard
  * requirement and not every browser has it, so a device that cannot draw falls
- * back to the photograph the app used before — better a plain surface than an
- * exception.
+ * back to the plain themed surface rather than an exception.
  */
 export function AmbientBackground() {
   const { theme } = useTheme()
   const [failed, setFailed] = useState(false)
 
   if (failed) {
-    return (
-      <div className="bg-ambient-shift" aria-hidden="true">
-        <div className="bg-ambient" />
-      </div>
-    )
+    return null
   }
 
   return (
