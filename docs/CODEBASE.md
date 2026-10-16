@@ -10,4 +10,4 @@ pnpm monorepo. Anonymous 1-on-1 chat.
 - App.tsx wraps the four screens in one `key={status}` element with `animate-fade`, so every screen change remounts and replays the transition; the wrapper's flex classes are the shell's, so screens keep their flex parent.
 - apps/web chat transcript: MessageList pins to the newest message only while the reader is already at the bottom (stuckRef) and offers a "Jump to latest" pill otherwise; each bubble carries an `sr-only` `<time>` so the stamp is not hover-only.
 - apps/web tests: vitest + jsdom, app-store state machine only; no component-render tests.
-- README.md + .github/workflows/ci.yml: root docs and CI (typecheck/lint/test/build). vercel.json serves apps/web/dist; the realtime server deploys separately as an always-on service.
+- README.md + .github/workflows/ci.yml: root docs and CI (typecheck/lint/test/build). Deploy split: vercel.json builds apps/web statically and render.yaml runs apps/server as a Node web service; the browser reaches the server cross-origin via `VITE_SERVER_URL`, so neither platform proxies the other's traffic.

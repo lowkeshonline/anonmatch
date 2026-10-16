@@ -1,0 +1,28 @@
+# Render blueprint for the realtime server (apps/server). The browser app is
+# separate: it ships as static assets from Vercel and reaches this service
+# cross-origin, so no proxy rewrites are involved.
+#
+# Free plan caveat: Render spins the service down after 15 idle minutes, which
+# drops live sockets. Clients reconnect, but a paid plan avoids the churn.
+services:
+  - type: web
+    name: anonmatch-server
+    runtime: node
+    plan: free
+    # corepack first: pnpm comes from the packageManager field, not the image.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @anonmatch/server build
+    startCommand: node apps/server/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Comma-separated browser-origin allowlist. Set to the Vercel URL.
+      - key: CORS_ORIGINS
+        sync: false
+      # Must equal VITE_GOOGLE_CLIENT_ID on the Vercel side.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: ALLOWED_DOMAINS
+        value: '*'
+      - key: SESSION_TTL_HOURS
+        value: '24'
