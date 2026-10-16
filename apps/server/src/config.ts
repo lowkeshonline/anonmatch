@@ -41,24 +41,26 @@ const envSchema = z.strictObject({
 /**
  * Only keys we own are parsed. `process.env` carries the whole shell
  * environment, so handing it straight to a strict schema fails on PATH, TERM
- * and friends. Filtering by our own prefixes first means a typo like
+ * and friends. Filtering to our own keys first means a typo like
  * `GOOGLE_CLIENT_IDD` is still caught as an unrecognised key, while unrelated
  * ambient variables are ignored.
+ *
+ * Single keys are matched exactly, not by prefix: containers and CI export
+ * `HOSTNAME`, which a `HOST` prefix would pull in, and the strict schema below
+ * would then reject the whole environment for it.
  */
-const OWNED_PREFIXES = [
-  'NODE_ENV',
-  'HOST',
-  'PORT',
-  'CORS_ORIGINS',
-  'GOOGLE_',
-  'ALLOWED_',
-  'SESSION_',
-] as const
+const OWNED_KEYS = ['NODE_ENV', 'HOST', 'PORT', 'CORS_ORIGINS'] as const
+const OWNED_PREFIXES = ['GOOGLE_', 'ALLOWED_', 'SESSION_'] as const
 
 function pickOwnedEnv(source: NodeJS.ProcessEnv): Record<string, string | undefined> {
   const picked: Record<string, string | undefined> = {}
   for (const [key, value] of Object.entries(source)) {
-    if (OWNED_PREFIXES.some((prefix) => key.startsWith(prefix))) picked[key] = value
+    if (
+      OWNED_KEYS.some((owned) => key === owned) ||
+      OWNED_PREFIXES.some((prefix) => key.startsWith(prefix))
+    ) {
+      picked[key] = value
+    }
   }
   return picked
 }

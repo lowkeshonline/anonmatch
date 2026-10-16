@@ -1,0 +1,52 @@
+# Docker Compose for the Anonmatch stack.
+#
+#   cp .env.docker.example .env    # then fill in GOOGLE_CLIENT_ID
+#   docker compose up --build
+#
+# The web app is on :8080 and the API on :4000. They are separate origins: the
+# browser reaches the API cross-origin, so CORS_ORIGINS must list the web origin
+# and VITE_SERVER_URL must be the API URL reachable *from the browser*, not the
+# compose service name.
+
+name: anonmatch
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "4000"
+      # Comma-separated browser-origin allowlist; must include the web origin.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in .env}
+      # Quoted: a bare * is a YAML alias.
+      ALLOWED_DOMAINS: "${ALLOWED_DOMAINS:-*}"
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-24}
+    ports:
+      - "${SERVER_PORT:-4000}:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Inlined into the bundle at build time: changing either needs a rebuild,
+        # not just a restart.
+        VITE_SERVER_URL: ${VITE_SERVER_URL:-http://localhost:4000}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in .env}
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"

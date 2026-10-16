@@ -1,0 +1,13 @@
+# Keep the build context small and, more importantly, keep local secrets out:
+# Vite would inline apps/web/.env and Node would load apps/server/.env, both
+# overriding the values passed in explicitly at build/run time.
+**/node_modules
+**/dist
+**/coverage
+**/.env*
+
+.git
+.github
+*.log
+.DS_Store
+docs

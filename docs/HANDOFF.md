@@ -1,5 +1,5 @@
 # Handoff
 
-Done: CI green on main (server tests stub `GOOGLE_CLIENT_ID` in vitest config, so no `.env` needed); legacy `backend/` + `frontend/` deleted; deploy config added (vercel.json buildCommand + render.yaml blueprint).
-Pending: create the Render service first, then set web `VITE_SERVER_URL`/`VITE_GOOGLE_CLIENT_ID` on Vercel and server `CORS_ORIGINS` = Vercel URL, `GOOGLE_CLIENT_ID` (same value) on Render.
-Failed: `browser` tool has no session tab, so shards/frosting still unverified in a real browser; `apps/web` has no `lint` script, use root `pnpm eslint`; Render free plan sleeps after 15 idle minutes and drops sockets.
+Done: Docker deploy added — apps/server/Dockerfile, apps/web/Dockerfile (nginx), docker-compose.yml, .dockerignore, .env.docker.example; both images build and the stack boots (health OK, SPA fallback OK, VITE_* inlined). Fixed config.ts env filter (exact-key match) so a container's HOSTNAME no longer crashes the strict schema. Fixed socket.ts: it called `io()` with no URL, so it dialed the page origin and nginx's SPA fallback answered `/socket.io` with HTML (parse error → connect_error toast); it now takes the same `VITE_SERVER_URL` base as api.ts.
+Pending: real deploy — `cp .env.docker.example .env`, fill GOOGLE_CLIENT_ID, point CORS_ORIGINS/VITE_SERVER_URL at public URLs and rebuild web; no unit test yet for the config key-filter fix.
+Failed: none new; vercel.json rewrites `/(.*)` to index.html, so a same-origin `/socket.io` would break there too — Vercel must set VITE_SERVER_URL and rely on the same cross-origin path.

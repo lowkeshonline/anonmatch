@@ -61,7 +61,10 @@ export function connectSocket(token: string, onSignal: Listener): ChatClientSock
 
   if (socket !== null) return socket
 
-  socket = io({
+  // Same base as `api.ts`. Passing `undefined` keeps the socket on the page
+  // origin, which is what the Vite dev proxy serves; without it the socket
+  // hits the static host, whose SPA fallback answers `/socket.io` with HTML.
+  socket = io(import.meta.env.VITE_SERVER_URL || undefined, {
     auth: (callback: (credentials: { token: string }) => void) => callback({ token }),
     autoConnect: true,
     transports: ['websocket', 'polling'],
