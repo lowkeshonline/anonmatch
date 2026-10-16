@@ -9,8 +9,9 @@ services:
     name: anonmatch-server
     runtime: node
     plan: free
-    # corepack first: pnpm comes from the packageManager field, not the image.
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @anonmatch/server build
+    # No `corepack enable`: the image ships pnpm and its filesystem is read-only,
+    # so corepack's attempt to relink /usr/bin/pnpm fails the build (EROFS).
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @anonmatch/server build
     startCommand: node apps/server/dist/index.js
     healthCheckPath: /health
     envVars:
